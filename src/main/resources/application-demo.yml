@@ -1,0 +1,31 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  main:
+    web-application-type: none
+    application:
+    name: page_path_web
+
+datax:
+  sync:
+    hdfs-default-fs: hdfs://realtime-1:9000/
+    # be streamLoad url
+    doris-load-url: realtime-1:18030
+    debug: true
+    datax-python-path: python3 /data/datax/bin/datax.py
+    target-data-source:
+      dbtype: 2
+      jdbc-url: jdbc:mysql://realtime-1:19030/ods
+      username: root
+      password: zanalytics
+      driver-class-name: com.mysql.cj.jdbc.Driver
+logging:
+  level:
+    com.datax.sync: DEBUG
+    org.mongodb.driver: ERROR
+    # 或者完全关闭
+    org.mongodb.driver.cluster: OFF
+    org.mongodb.driver.connection: OFF
+  pattern:
+    console: "%msg%n"
