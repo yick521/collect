@@ -49,6 +49,8 @@ public class BaseQueryTool implements QueryToolInterface {
 
 	protected String currentDatabase;
 
+	protected HikariDataSource dataSource;  // 保存 DataSource 引用
+
 
 	public BaseQueryTool(JobDatasource jobDatasource) throws SQLException {
 
@@ -315,30 +317,28 @@ public class BaseQueryTool implements QueryToolInterface {
 	}
 
 	public void getDataSource(JobDatasource jobDatasource) throws SQLException {
-		logger.info(" start connection  {}",jobDatasource);
-		//
-		//这里使用 hikari 数据源
-		HikariDataSource dataSource = new HikariDataSource();
-		dataSource.setUsername(jobDatasource.getJdbcUsername());
-		dataSource.setPassword(jobDatasource.getJdbcPassword());
-		dataSource.setJdbcUrl(jobDatasource.getJdbcUrl());
-		dataSource.setDriverClassName(jobDatasource.getJdbcDriverClass());
-		dataSource.setMaximumPoolSize(1);
-		dataSource.setMinimumIdle(0);
+		logger.info(" start connection  {}", jobDatasource);
+
+		// 直接赋值给成员变量，不要用局部变量
+		this.dataSource = new HikariDataSource();
+		this.dataSource.setUsername(jobDatasource.getJdbcUsername());
+		this.dataSource.setPassword(jobDatasource.getJdbcPassword());
+		this.dataSource.setJdbcUrl(jobDatasource.getJdbcUrl());
+		this.dataSource.setDriverClassName(jobDatasource.getJdbcDriverClass());
+		this.dataSource.setMaximumPoolSize(1);
+		this.dataSource.setMinimumIdle(0);
+
 		String testSQL = "SELECT 1";
 		if ("hana".equalsIgnoreCase(jobDatasource.getDatasourceType())) {
 			testSQL = "SELECT 1 from tables LIMIT 1";
 		} else if (Constant.ORACLE_TYPE.equalsIgnoreCase(jobDatasource.getDatasourceType())) {
 			testSQL = "select 1 from dual";
 		}
-		// else if(Contains.IMPALA_TYPE.equalsIgnoreCase(jobDatasource.getDatasourceType())){
-		// 	testSQL = "select now()";
-		// 	dataSource.setValidationTimeout(50000);
-		// }
-		dataSource.setConnectionTestQuery(testSQL);
-		dataSource.setConnectionTimeout(60000);
+
+		this.dataSource.setConnectionTestQuery(testSQL);
+		this.dataSource.setConnectionTimeout(60000);
 		this.dataType = jobDatasource.getDatasourceType();
-		this.connection = dataSource.getConnection();
+		this.connection = this.dataSource.getConnection();
 
 		logger.info("connection init success");
 	}
@@ -368,6 +368,11 @@ public class BaseQueryTool implements QueryToolInterface {
 
 	public void closeCon(){
 		JdbcUtils.close(connection);
+		// 关闭 DataSource
+		if (dataSource != null && !dataSource.isClosed()) {
+			dataSource.close();
+			log.info("HikariDataSource closed");
+		}
 	}
 
 
